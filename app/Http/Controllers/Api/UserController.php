@@ -35,7 +35,7 @@ class UserController extends Controller
             $keyword = $request->get('keyword');
             $user   = $user->where('name', 'like', "%{$keyword}%");
         }
-        
+
         $user   = $user->paginate(20);
 
         return response([
@@ -63,7 +63,7 @@ class UserController extends Controller
         if ($validation->fails()) {
             return response([
                 'status'    => 'failed',
-                'errors'    => $validation->errors()
+                'errors'    => $validation->messages()->all()
             ]);
         }
 
