@@ -28,7 +28,11 @@ class ServiceController extends Controller
             $service   = $service->orderBy('name');
         }
 
-        $service   = $service->get();
+        $service   = $service->paginate(20);
+
+        foreach ($service as $item) {
+            $item->image = 'http://localhost:8000/storage/'.$item->image;
+        }
 
         return response([
             'status'    => 'success',
@@ -51,7 +55,7 @@ class ServiceController extends Controller
         if ($validation->fails()) {
             return response([
                 'status'    => 'failed',
-                'errors'    => $validation->errors()
+                'errors'    => $validation->messages()->all()
             ]);
         }
 
@@ -89,6 +93,8 @@ class ServiceController extends Controller
     {
         $data       = Service::find($id);
 
+        $data->image = 'http://localhost:8000/storage/'.$data->image;
+
         return response([
             'status'    => 'success',
             'data'      => $data
@@ -111,7 +117,7 @@ class ServiceController extends Controller
         if ($validation->fails()) {
             return response([
                 'status'    => 'failed',
-                'errors'    => $validation->errors()
+                'errors'    => $validation->messages()->all()
             ]);
         }
 
