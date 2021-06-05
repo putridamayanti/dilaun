@@ -28,7 +28,11 @@ class ProductController extends Controller
             $product   = $product->orderBy('name');
         }
 
-        $product   = $product->get();
+        $product   = $product->paginate(20);
+
+        foreach ($product as $item) {
+            if ($item->image != null) $item->image = 'http://localhost:8000/storage/'.$item->image;
+        }
 
         return response([
             'status'    => 'success',
