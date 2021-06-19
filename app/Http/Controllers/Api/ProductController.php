@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductService;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -28,7 +29,8 @@ class ProductController extends Controller
             $product   = $product->orderBy('name');
         }
 
-        $product   = $product->paginate(20);
+        $product   = $product->with(['services', 'services.service'])
+                        ->paginate(20);
 
         foreach ($product as $item) {
             if ($item->image != null) $item->image = 'http://localhost:8000/storage/'.$item->image;
@@ -49,7 +51,8 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $validation = Validator::make($request->all(), [
-            'name'          => 'required'
+            'name'          => 'required',
+            'services'      => 'required'
         ]);
 
         if ($validation->fails()) {
@@ -75,9 +78,16 @@ class ProductController extends Controller
             $data->image = $image_name . '.'.$image_type;
         }
 
-        $data->price_per_kg     = $request->get('price_per_kg');
-        $data->price_per_pcs    = $request->get('price_per_pcs');
         $data->save();
+
+        foreach($request->get('services') as $item) {
+            $productService                 = new ProductService();
+            $productService->service_id     = $item['service_id'];
+            $productService->product_id     = $data->id;
+            $productService->price_per_kg   = $item['price_per_kg'];
+            $productService->price_per_pcs  = $item['price_per_pcs'];
+            $productService->save();
+        }
 
         return response([
             'status'    => 'success',
@@ -93,7 +103,9 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        $data       = Product::find($id);
+        $data       = Product::where('id', $id)->with(['services'])->first();
+
+        if ($data->image) $data->image = 'http://localhost:8000/storage/'.$data->image;
 
         return response([
             'status'    => 'success',
@@ -137,9 +149,26 @@ class ProductController extends Controller
             $data->image = $image_name . '.'.$image_type;
         }
 
-        $data->price_per_kg     = $request->get('price_per_kg');
-        $data->price_per_pcs    = $request->get('price_per_pcs');
         $data->save();
+
+        foreach($request->get('services') as $item) {
+            if (array_key_exists('deleted', $item)) {
+                $productService             = ProductService::find($item['id']);
+                $productService->delete();
+            } else {
+                $productService             = new ProductService();
+
+                if (array_key_exists('id', $item)) {
+                    $productService         = ProductService::find($item['id']);
+                }
+
+                $productService->service_id = $item['service_id'];
+                $productService->product_id = $data->id;
+                $productService->price_per_kg   = $item['price_per_kg'];
+                $productService->price_per_pcs  = $item['price_per_pcs'];
+                $productService->save();
+            }
+        }
 
         return response([
             'status'    => 'success',
@@ -161,6 +190,8 @@ class ProductController extends Controller
         if ($fileExists) {
             Storage::disk('public')->delete($data->image);
         }
+
+        ProductService::where('product_id', $data->id)->delete();
 
         $data->delete();
 

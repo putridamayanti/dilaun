@@ -17,8 +17,6 @@ class CreateProductsTable extends Migration
             $table->id();
             $table->string('name');
             $table->string('image')->nullable();
-            $table->string('price_per_kg')->nullable();
-            $table->string('price_per_pcs')->nullable();
             $table->timestamps();
         });
     }

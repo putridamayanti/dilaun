@@ -91,9 +91,19 @@ class ServiceController extends Controller
      */
     public function show($id)
     {
-        $data       = Service::find($id);
+        $data       = Service::where('id', $id)
+                        ->with(['products.product'])
+                        ->first();
 
         $data->image = 'http://localhost:8000/storage/'.$data->image;
+
+        foreach ($data->products as $product) {
+            $product->name = $product->product->name;
+
+            if ($product->product->image != null) {
+                $product->image = 'http://localhost:8000/storage/'.$product->product->image;
+            }
+        }
 
         return response([
             'status'    => 'success',
